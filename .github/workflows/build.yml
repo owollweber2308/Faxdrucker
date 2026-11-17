@@ -56,15 +56,54 @@ jobs:
         shell: pwsh
         run: |
           $out = "dist/FaxDrucker"
-          dotnet publish src/FaxDrucker.App -c Release -r win-x64 --self-contained true -o $out
-          dotnet publish src/FaxDrucker.Cli -c Release -r win-x64 --self-contained true -o $out
-          Copy-Item installer/* $out
+          $ver = "0.2.$env:GITHUB_RUN_NUMBER"
+          dotnet publish src/FaxDrucker.App -c Release -r win-x64 --self-contained true -o $out -p:Version=$ver
+          dotnet publish src/FaxDrucker.Cli -c Release -r win-x64 --self-contained true -o $out -p:Version=$ver
+          Copy-Item installer/*.ps1, installer/*.cmd $out
           Copy-Item README.md $out/LIESMICH.md
           Get-ChildItem $out -Filter *.pdb | Remove-Item
 
       - name: Selbsttest des Pakets
         shell: pwsh
         run: dist/FaxDrucker/faxsend.exe selbsttest
+
+      - name: MSI bauen
+        shell: pwsh
+        run: |
+          $ver = "0.2.$env:GITHUB_RUN_NUMBER"
+          $pub = (Resolve-Path dist/FaxDrucker).Path
+          dotnet build installer/msi/FaxDrucker.wixproj -c Release -p:FaxPublishDir=$pub -p:Version=$ver -o dist/msi
+          Get-ChildItem dist/msi
+
+      - name: MSI testweise installieren und entfernen
+        shell: pwsh
+        run: |
+          $msi = (Get-ChildItem dist/msi/*.msi | Select-Object -First 1).FullName
+          # Ungültiger Lizenzschlüssel muss die Installation abbrechen und alles zurückrollen
+          $p = Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /qn FAXDRUCKER_NOSTART=1 LICENSEKEY=FD1-UNGUELTIG /l*v `"$PWD\badkey.log`"" -Wait -PassThru
+          if ($p.ExitCode -eq 0) { throw 'Installation mit ungültigem Lizenzschlüssel hätte fehlschlagen müssen' }
+          if (Get-Printer -Name FaxDrucker -ErrorAction SilentlyContinue) { throw 'Drucker nach Rollback noch vorhanden' }
+          if (Test-Path "$env:ProgramFiles\FaxDrucker\FaxDrucker.exe") { throw 'Dateien nach Rollback noch vorhanden' }
+          Write-Host "Ungültiger Schlüssel korrekt abgelehnt (Exitcode $($p.ExitCode))"
+          $p = Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /qn FAXDRUCKER_NOSTART=1 /l*v `"$PWD\install.log`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Get-Content install.log -Tail 80; throw "Installation fehlgeschlagen: $($p.ExitCode)" }
+          Select-String -Path install.log -Pattern 'WixQuietExec' | Select-Object -Last 15 | ForEach-Object { $_.Line }
+          $printer = Get-Printer -Name FaxDrucker
+          $printer | Format-List Name, DriverName, PortName
+          if ($printer.PortName -ne '\\.\pipe\FaxDrucker') { throw "Falscher Anschluss: $($printer.PortName)" }
+          if (-not (Test-Path "$env:ProgramFiles\FaxDrucker\FaxDrucker.exe")) { throw 'FaxDrucker.exe fehlt' }
+          & "$env:ProgramFiles\FaxDrucker\faxsend.exe" selbsttest
+          if ($LASTEXITCODE -ne 0) { throw 'Selbsttest nach Installation fehlgeschlagen' }
+          $p = Start-Process msiexec.exe -ArgumentList "/x `"$msi`" /qn /l*v `"$PWD\uninstall.log`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Get-Content uninstall.log -Tail 80; throw "Deinstallation fehlgeschlagen: $($p.ExitCode)" }
+          if (Get-Printer -Name FaxDrucker -ErrorAction SilentlyContinue) { throw 'Drucker nach Deinstallation noch vorhanden' }
+          if (Test-Path "$env:ProgramFiles\FaxDrucker\FaxDrucker.exe") { throw 'Programmdateien nach Deinstallation noch vorhanden' }
+          Write-Host 'Installation und Deinstallation OK'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaxDrucker-msi
+          path: dist/msi/*.msi
 
       - uses: actions/upload-artifact@v4
         with:

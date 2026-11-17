@@ -35,14 +35,16 @@ Fotoseiten enthalten viel mehr Bildpunkte und brauchen pro Seite oft mehrere Min
 ## Installation
 
 Voraussetzungen: Windows 10/11 (64 Bit) und [Ghostscript](https://ghostscript.com/releases/gsdnld.html)
-(64 Bit). Das Installationsskript bietet an, Ghostscript per `winget` zu installieren.
+(64 Bit, z. B. `winget install ArtifexSoftware.GhostScript`). Fehlt Ghostscript, weist FaxDrucker beim Start darauf hin.
 
-1. Das Paket `FaxDrucker-win-x64` herunterladen (GitHub → Actions → letzter Build → Artifacts) und entpacken.
-2. **`Installieren.cmd`** doppelklicken und die Administratorabfrage bestätigen.
-3. Den **Lizenzschlüssel** eingeben (`FD1-…`, am besten kopieren und einfügen). Er gilt für alle
-   Benutzer des PCs und liegt unter `%ProgramData%\FaxDrucker\lizenz.txt`. Ohne gültige Lizenz
-   fragt das Programm beim Start danach und faxt nicht.
-4. Beim ersten Start öffnen sich die Einstellungen. Eintragen:
+1. **`FaxDrucker-<Version>.msi`** herunterladen (GitHub → Actions → letzter Build → Artifacts → `FaxDrucker-msi`).
+2. MSI doppelklicken. Es richtet Programm, Drucker „FaxDrucker“, Druckeranschluss, Autostart und
+   Startmenü-Eintrag ein und startet FaxDrucker. Updates einfach mit einem neueren MSI drüberinstallieren.
+3. Beim ersten Start fragt FaxDrucker nach dem **Lizenzschlüssel** (`FD1-…`, am besten kopieren und
+   einfügen). Er gilt für alle Benutzer des PCs und liegt unter `%ProgramData%\FaxDrucker\lizenz.txt`.
+   Ohne gültige Lizenz faxt das Programm nicht.
+   Für die Verteilung im Netzwerk mit Schlüssel: `msiexec /i FaxDrucker-<Version>.msi /qn LICENSEKEY=FD1-…`
+4. Danach öffnen sich die Einstellungen. Eintragen:
 
 | Feld | Placetel |
 |---|---|
@@ -55,7 +57,8 @@ Die SIP-Zugangsdaten stehen im Placetel-Webportal beim jeweiligen SIP-Endgerät.
 Am besten ein **eigenes Endgerät für den FaxDrucker** anlegen. Das Passwort wird mit
 Windows-DPAPI verschlüsselt unter `%APPDATA%\FaxDrucker\settings.json` gespeichert.
 
-Entfernen: `Deinstallieren.cmd` im Programmordner `C:\Program Files\FaxDrucker`.
+Entfernen: in den Windows-Einstellungen unter „Apps“ (entfernt auch Drucker und Anschluss).
+Alternativ zur MSI gibt es im Paket `FaxDrucker-win-x64` weiterhin `Installieren.cmd`/`Deinstallieren.cmd`.
 
 ## Kommandozeile
 
@@ -92,7 +95,7 @@ FaxDrucker.Core
 | `src/FaxDrucker.App` | Windows-Programm im Infobereich |
 | `src/FaxDrucker.Cli` | `faxsend` für Tests und Skripte |
 | `native/faxshim` | kleine C-Schicht über spandsp (stabile API für .NET) |
-| `installer` | Installations-/Deinstallationsskripte |
+| `installer` | MSI (WiX, `installer/msi`), Druckereinrichtung `printer-setup.ps1`, Skript-Installer |
 | `tests` | Unit-Tests und Ende-zu-Ende-Tests mit simulierter Gegenstelle |
 
 ## Entwickeln

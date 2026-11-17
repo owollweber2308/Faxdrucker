@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MSI für FaxDrucker (WiX Toolset 5).
+  Installiert das Programm nach C:\Program Files\FaxDrucker, richtet den Drucker
+  "FaxDrucker" samt Anschluss \\.\pipe\FaxDrucker ein, Autostart und Startmenü.
+  Bei der Deinstallation werden Drucker und Anschluss wieder entfernt.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="FaxDrucker"
+           Manufacturer="FaxDrucker"
+           Version="$(var.Version)"
+           UpgradeCode="EF53052F-2B1C-4499-97AB-4748EBC79B66"
+           Scope="perMachine"
+           Language="1031"
+           Codepage="1252"
+           Compressed="yes">
+
+    <SummaryInformation Description="FaxDrucker – Fax über SIP (T.38/G.711)" />
+    <MajorUpgrade DowngradeErrorMessage="Eine neuere Version von FaxDrucker ist bereits installiert." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="ARPCOMMENTS" Value="Virtueller Faxdrucker mit Versand über SIP" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <!-- Lizenzschlüssel für die stille Verteilung: msiexec /i FaxDrucker.msi /qn LICENSEKEY=FD1-… -->
+    <Property Id="LICENSEKEY" Secure="yes" Hidden="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="FaxDrucker" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="FaxDrucker">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="Autostart" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.FaxPublishDir)\**">
+        <!-- Nur für die Skript-Installation gedacht -->
+        <Exclude Files="$(var.FaxPublishDir)\*.cmd" />
+        <Exclude Files="$(var.FaxPublishDir)\install.ps1" />
+        <Exclude Files="$(var.FaxPublishDir)\uninstall.ps1" />
+      </Files>
+    </ComponentGroup>
+
+    <Component Id="Autostart" Directory="INSTALLFOLDER" Guid="5C0E1E9B-2D57-4C55-9C3A-6E2A4B8F7A11">
+      <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+                     Name="FaxDrucker" Type="string" Value="&quot;[INSTALLFOLDER]FaxDrucker.exe&quot;" KeyPath="yes" />
+    </Component>
+
+    <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="0F2B9E43-8E8D-4C77-B0B5-1B9E3F6D2C21">
+      <Shortcut Id="FaxDruckerShortcut" Name="FaxDrucker" Description="Fax über SIP senden"
+                Target="[INSTALLFOLDER]FaxDrucker.exe" WorkingDirectory="INSTALLFOLDER" />
+      <!-- ICE38/43: KeyPath für Verknüpfungen muss unter HKCU liegen -->
+      <RegistryValue Root="HKCU" Key="SOFTWARE\FaxDrucker" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Laufendes Programm vor dem Ersetzen der Dateien beenden -->
+    <SetProperty Id="CA_StopApp" Sequence="execute" Before="CA_StopApp"
+                 Value="&quot;[System64Folder]taskkill.exe&quot; /F /IM FaxDrucker.exe" />
+    <CustomAction Id="CA_StopApp" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Return="ignore" Impersonate="no" />
+
+    <!-- Drucker + Anschluss einrichten (als SYSTEM) -->
+    <SetProperty Id="CA_PrinterInstall" Sequence="execute" Before="CA_PrinterInstall"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]printer-setup.ps1&quot;" />
+    <CustomAction Id="CA_PrinterInstall" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Return="check" Impersonate="no" />
+
+    <!-- Rollback: Bricht die Installation nach der Druckereinrichtung ab (z. B. ungültiger Lizenzschlüssel),
+         Drucker und Anschluss wieder entfernen. Läuft vor dem Zurückrollen der Dateien. -->
+    <SetProperty Id="CA_PrinterRollback" Sequence="execute" Before="CA_PrinterRollback"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]printer-setup.ps1&quot; -Remove" />
+    <CustomAction Id="CA_PrinterRollback" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="rollback" Return="ignore" Impersonate="no" />
+
+    <!-- Drucker + Anschluss bei Deinstallation entfernen -->
+    <SetProperty Id="CA_PrinterRemove" Sequence="execute" Before="CA_PrinterRemove"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]printer-setup.ps1&quot; -Remove" />
+    <CustomAction Id="CA_PrinterRemove" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Return="ignore" Impersonate="no" />
+
+    <!-- Lizenzschlüssel speichern (%ProgramData%\FaxDrucker\lizenz.txt). Ungültiger Schlüssel bricht die Installation ab.
+         Ohne LICENSEKEY fragt FaxDrucker beim ersten Start selbst danach. -->
+    <SetProperty Id="CA_License" Sequence="execute" Before="CA_License" Condition="LICENSEKEY"
+                 Value="&quot;[INSTALLFOLDER]faxsend.exe&quot; lizenz &quot;[LICENSEKEY]&quot;" />
+    <CustomAction Id="CA_License" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Return="check" Impersonate="no" HideTarget="yes" />
+
+    <!-- Nach der Installation im Benutzerkontext (ohne Adminrechte) starten -->
+    <CustomAction Id="CA_LaunchApp" Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[WindowsFolder]explorer.exe&quot; &quot;[INSTALLFOLDER]FaxDrucker.exe&quot;"
+                  Execute="immediate" Return="asyncNoWait" Impersonate="yes" />
+
+    <InstallExecuteSequence>
+      <Custom Action="CA_StopApp" Before="RemoveFiles" />
+      <Custom Action="CA_PrinterRemove" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="CA_PrinterRollback" Before="CA_PrinterInstall" Condition="NOT REMOVE AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="CA_PrinterInstall" After="InstallFiles" Condition="NOT REMOVE" />
+      <Custom Action="CA_License" After="CA_PrinterInstall" Condition="LICENSEKEY AND NOT REMOVE" />
+      <Custom Action="CA_LaunchApp" After="InstallFinalize" Condition="NOT REMOVE AND UILevel &gt;= 3 AND NOT FAXDRUCKER_NOSTART" />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

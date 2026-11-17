@@ -1,0 +1,16 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    Bauen (Windows):
+      dotnet build installer/msi/FaxDrucker.wixproj -c Release -p:FaxPublishDir=<Ordner mit veröffentlichtem Programm> -p:Version=0.2.0
+  -->
+  <PropertyGroup>
+    <Version Condition="'$(Version)' == ''">0.2.0</Version>
+    <OutputName>FaxDrucker-$(Version)</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <DefineConstants>FaxPublishDir=$(FaxPublishDir);Version=$(Version)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+</Project>
