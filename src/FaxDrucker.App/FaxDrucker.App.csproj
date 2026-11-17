@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>FaxDrucker</AssemblyName>
+    <RootNamespace>FaxDrucker.App</RootNamespace>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Version>0.1.0</Version>
+    <Product>FaxDrucker</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FaxDrucker.Core\FaxDrucker.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Native Fax-Bibliothek (faxshim.dll + spandsp/libtiff), erzeugt von native/build-windows.sh -->
+  <ItemGroup>
+    <None Include="..\..\native\win-x64\*.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" LinkBase="." />
+    <None Include="..\..\native\faxshim\libfaxshim.so" Condition="Exists('..\..\native\faxshim\libfaxshim.so')" CopyToOutputDirectory="PreserveNewest" Link="libfaxshim.so" />
+  </ItemGroup>
+
+</Project>

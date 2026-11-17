@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux-tests:
+    name: Tests (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Abhängigkeiten
+        run: sudo apt-get update && sudo apt-get install -y libspandsp-dev libtiff-dev ghostscript
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: faxshim bauen
+        run: make -C native/faxshim
+      - name: Tests
+        run: dotnet test tests/FaxDrucker.Tests -c Release --logger "console;verbosity=normal"
+
+  windows:
+    name: Windows-Paket
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-libtiff
+            mingw-w64-x86_64-pkgconf
+            autoconf automake libtool make git
+
+      - name: spandsp + faxshim.dll bauen
+        shell: msys2 {0}
+        run: bash native/build-windows.sh
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Ghostscript für Tests
+        run: choco install ghostscript -y --no-progress
+
+      - name: Tests (Windows)
+        run: dotnet test tests/FaxDrucker.Tests -c Release --logger "console;verbosity=normal"
+
+      - name: Veröffentlichen
+        shell: pwsh
+        run: |
+          $out = "dist/FaxDrucker"
+          dotnet publish src/FaxDrucker.App -c Release -r win-x64 --self-contained true -o $out
+          dotnet publish src/FaxDrucker.Cli -c Release -r win-x64 --self-contained true -o $out
+          Copy-Item installer/* $out
+          Copy-Item README.md $out/LIESMICH.md
+          Get-ChildItem $out -Filter *.pdb | Remove-Item
+
+      - name: Selbsttest des Pakets
+        shell: pwsh
+        run: dist/FaxDrucker/faxsend.exe selbsttest
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaxDrucker-win-x64
+          path: dist/FaxDrucker

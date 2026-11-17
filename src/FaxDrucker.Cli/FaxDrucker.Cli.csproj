@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>faxsend</AssemblyName>
+    <RootNamespace>FaxDrucker.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FaxDrucker.Core\FaxDrucker.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Native Fax-Bibliothek (faxshim.dll + spandsp/libtiff), erzeugt von native/build-windows.sh -->
+  <ItemGroup>
+    <None Include="..\..\native\win-x64\*.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" LinkBase="." />
+    <None Include="..\..\native\faxshim\libfaxshim.so" Condition="Exists('..\..\native\faxshim\libfaxshim.so')" CopyToOutputDirectory="PreserveNewest" Link="libfaxshim.so" />
+  </ItemGroup>
+
+</Project>

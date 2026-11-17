@@ -1,0 +1,90 @@
+#Requires -RunAsAdministrator
+<#
+  FaxDrucker installieren:
+   - Programm nach C:\Program Files\FaxDrucker kopieren
+   - Drucker "FaxDrucker" mit dem in Windows enthaltenen PostScript-Treiber anlegen
+   - Druckeranschluss \\.\pipe\FaxDrucker (Übergabe an das Programm im Infobereich)
+   - Autostart für alle Benutzer
+#>
+param(
+    [string]$Target = "$env:ProgramFiles\FaxDrucker",
+    [string]$PrinterName = 'FaxDrucker'
+)
+$ErrorActionPreference = 'Stop'
+$src = $PSScriptRoot
+$portName = '\\.\pipe\FaxDrucker'
+$driver = 'Microsoft PS Class Driver'
+
+Write-Host "FaxDrucker wird installiert nach $Target" -ForegroundColor Cyan
+
+# Aus dem Internet geladene Dateien freigeben
+Get-ChildItem $src -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
+
+# Laufende Instanz beenden
+Get-Process FaxDrucker -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Milliseconds 500
+
+# Dateien kopieren
+New-Item -ItemType Directory -Force $Target | Out-Null
+Get-ChildItem $src | Where-Object { $_.Name -notin @('install.ps1', 'Installieren.cmd') } |
+    Copy-Item -Destination $Target -Recurse -Force
+
+# Druckertreiber (in Windows 10/11 enthalten)
+if (-not (Get-PrinterDriver -Name $driver -ErrorAction SilentlyContinue)) {
+    Write-Host "Installiere Druckertreiber '$driver'…"
+    Add-PrinterDriver -Name $driver
+}
+
+# Lokaler Anschluss, der in die Named Pipe schreibt
+if (-not (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue)) {
+    Write-Host "Lege Druckeranschluss $portName an…"
+    try {
+        Add-PrinterPort -Name $portName
+    } catch {
+        New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Ports' -Name $portName `
+            -Value '' -PropertyType String -Force | Out-Null
+        Restart-Service Spooler -Force
+        Start-Sleep -Seconds 2
+    }
+}
+
+# Drucker anlegen (vorhandenen ersetzen)
+if (Get-Printer -Name $PrinterName -ErrorAction SilentlyContinue) {
+    Remove-Printer -Name $PrinterName
+}
+Add-Printer -Name $PrinterName -DriverName $driver -PortName $portName -Comment 'Fax über SIP (Placetel)'
+try { Set-PrintConfiguration -PrinterName $PrinterName -PaperSize A4 -Color $false } catch { }
+
+# Autostart für alle Benutzer
+New-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name 'FaxDrucker' `
+    -Value "`"$Target\FaxDrucker.exe`"" -PropertyType String -Force | Out-Null
+
+# Startmenü-Eintrag
+$startMenu = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs'
+$shell = New-Object -ComObject WScript.Shell
+$lnk = $shell.CreateShortcut((Join-Path $startMenu 'FaxDrucker.lnk'))
+$lnk.TargetPath = "$Target\FaxDrucker.exe"
+$lnk.WorkingDirectory = $Target
+$lnk.Save()
+
+# Ghostscript prüfen
+$gs = Get-ChildItem "$env:ProgramFiles\gs\*\bin\gswin64c.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $gs) {
+    Write-Warning 'Ghostscript ist nicht installiert. Es wird zum Umwandeln der Druckaufträge benötigt.'
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        $answer = Read-Host 'Ghostscript jetzt mit winget installieren? (j/n)'
+        if ($answer -match '^[jJyY]') {
+            winget install --id ArtifexSoftware.GhostScript -e --accept-package-agreements --accept-source-agreements
+        }
+    } else {
+        Write-Host 'Bitte von https://ghostscript.com/releases/gsdnld.html die 64-Bit-Version installieren.'
+    }
+}
+
+# Programm ohne Administratorrechte im Kontext des angemeldeten Benutzers starten
+Start-Process explorer.exe "`"$Target\FaxDrucker.exe`""
+
+Write-Host ''
+Write-Host "Fertig. Der Drucker '$PrinterName' ist eingerichtet." -ForegroundColor Green
+Write-Host 'Beim ersten Start öffnen sich die Einstellungen für den SIP-Zugang.'
+Read-Host 'Mit Enter schließen'
