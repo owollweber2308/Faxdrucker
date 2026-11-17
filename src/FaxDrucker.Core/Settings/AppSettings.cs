@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FaxDrucker.Core.Convert;
 using FaxDrucker.Core.Sip;
 
 namespace FaxDrucker.Core.Settings;
@@ -18,7 +19,8 @@ public sealed class AppSettings
     public string StationId { get; set; } = "";
     /// <summary>Kopfzeile auf jeder Seite, z. B. Firmenname.</summary>
     public string HeaderText { get; set; } = "";
-    public bool FineResolution { get; set; } = true;
+    public FaxResolution Resolution { get; set; } = FaxResolution.Fein;
+    public ImageMode ImageMode { get; set; } = ImageMode.Text;
     public bool Ecm { get; set; } = true;
     public int RetryCount { get; set; } = 3;
     public int RetryDelaySeconds { get; set; } = 120;

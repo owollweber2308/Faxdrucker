@@ -333,3 +333,8 @@ FS_API const char * FS_CALL fs_spandsp_version(void)
 {
     return SPANDSP_RELEASE_DATETIME_STRING;
 }
+
+FS_API int FS_CALL fs_code_no_resolution_support(void)
+{
+    return T30_ERR_NORESSUPPORT;
+}

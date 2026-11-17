@@ -14,10 +14,15 @@ public class FaxLoopbackTests
     private readonly ITestOutputHelper _out;
     public FaxLoopbackTests(ITestOutputHelper output) => _out = output;
 
-    [Fact]
-    public async Task T38LoopbackTransfersAllPages()
+    [Theory]
+    [InlineData(FaxResolution.Normal, ImageMode.Text)]
+    [InlineData(FaxResolution.Fein, ImageMode.Text)]
+    [InlineData(FaxResolution.Superfein, ImageMode.Text)]
+    [InlineData(FaxResolution.Fein, ImageMode.Foto)]
+    [InlineData(FaxResolution.Superfein, ImageMode.Foto)]
+    public async Task T38LoopbackTransfersAllPages(FaxResolution res, ImageMode mode)
     {
-        var tif = await TestDocs.CreateTiffAsync();
+        var tif = await TestDocs.CreateTiffAsync(res, mode);
         var rx = Path.Combine(Path.GetTempPath(), $"rx-{Guid.NewGuid():N}.tif");
         using var sender = new FaxSession(FaxTransport.T38, true, tif, null, "+49 30 1111", "FaxDrucker Test");
         using var receiver = new FaxSession(FaxTransport.T38, false, null, rx, "+49 30 2222", null);
@@ -30,7 +35,7 @@ public class FaxLoopbackTests
         receiver.T38PacketOut += (ifp, count) => toA.Enqueue(encB.Encode(ifp));
 
         int ticks = 0;
-        while (!(sender.IsDone && receiver.IsDone) && ticks < 50 * 60 * 5)
+        while (!(sender.IsDone && receiver.IsDone) && ticks < 50 * 60 * 15)
         {
             sender.TickT38(160);
             receiver.TickT38(160);
@@ -43,6 +48,7 @@ public class FaxLoopbackTests
         Assert.Equal(2, sender.PagesSent);
         Assert.Equal(2, TiffInfo.CountPages(rx));
         Assert.Equal("+49 30 2222", sender.RemoteIdent);
+        _out.WriteLine($"Empfangen: {rx}");
     }
 
     [Fact]

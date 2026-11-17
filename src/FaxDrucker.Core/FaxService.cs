@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FaxDrucker.Core.Convert;
+using FaxDrucker.Core.Fax;
 using FaxDrucker.Core.Media;
 using FaxDrucker.Core.Report;
 using FaxDrucker.Core.Settings;
@@ -16,6 +17,10 @@ public sealed class FaxRequest
     public string DocumentName { get; init; } = "Dokument";
     /// <summary>Quelldatei nach dem Senden löschen (temporäre Druckdaten).</summary>
     public bool DeleteSourceAfterwards { get; init; }
+    /// <summary>Abweichende Auflösung nur für diesen Auftrag (sonst aus den Einstellungen).</summary>
+    public FaxResolution? Resolution { get; init; }
+    /// <summary>Abweichender Bildmodus nur für diesen Auftrag.</summary>
+    public ImageMode? ImageMode { get; init; }
 }
 
 /// <summary>Eintrag im Sendeprotokoll (journal.jsonl).</summary>
@@ -47,17 +52,9 @@ public sealed class FaxService
         try
         {
             Status?.Invoke("Bereite Dokument vor…");
-            if (IsTiff(request.SourceFile))
-            {
-                File.Copy(request.SourceFile, tiff);
-                pages = TiffInfo.CountPages(tiff);
-            }
-            else
-            {
-                var gs = new GhostscriptConverter();
-                pages = await gs.ToFaxTiffAsync(request.SourceFile, tiff, _settings.FineResolution, ct);
-            }
-            WriteLog($"Dokument umgewandelt: {pages} Seite(n)");
+            var resolution = request.Resolution ?? _settings.Resolution;
+            var imageMode = request.ImageMode ?? _settings.ImageMode;
+            pages = await PrepareAsync(request.SourceFile, tiff, resolution, imageMode, ct);
 
             var header = string.IsNullOrWhiteSpace(_settings.HeaderText) ? _settings.StationId : _settings.HeaderText;
             var job = new FaxJobParameters(tiff, null, true, Truncate(_settings.StationId, 20), header,
@@ -75,6 +72,18 @@ public sealed class FaxService
                     WriteLog($"Versuch {attempts}: {request.Number}");
                     last = await call.SendAsync(request.Number, job, ct);
                     WriteLog($"Ergebnis: {last.Status} – {last.Message}");
+                    if (!last.Success && last.Fax?.ResultCode == FaxSession.CodeNoResolutionSupport
+                        && resolution == FaxResolution.Superfein && !IsTiff(request.SourceFile))
+                    {
+                        // Gegenstelle kann z. B. kein Superfein: sofort in "Fein" neu senden.
+                        resolution = FaxResolution.Fein;
+                        WriteLog("Gegenstelle unterstützt die Auflösung nicht, sende erneut in Fein.");
+                        Status?.Invoke("Empfänger kann diese Auflösung nicht, sende in Fein…");
+                        File.Delete(tiff);
+                        pages = await PrepareAsync(request.SourceFile, tiff, resolution, imageMode, ct);
+                        attempts--; // zählt nicht als Wahlwiederholung
+                        continue;
+                    }
                     if (last.Success || !last.Retryable || attempts > _settings.RetryCount)
                         break;
                     Status?.Invoke($"{last.Message}. Neuer Versuch in {_settings.RetryDelaySeconds} s…");
@@ -127,6 +136,22 @@ public sealed class FaxService
             try { File.Delete(request.SourceFile); } catch { }
         Status?.Invoke(success ? "Fax gesendet." : "Fax nicht gesendet: " + message);
         return entry;
+    }
+
+    private async Task<int> PrepareAsync(string source, string tiff, FaxResolution resolution, ImageMode mode, CancellationToken ct)
+    {
+        int pages;
+        if (IsTiff(source))
+        {
+            File.Copy(source, tiff, true);
+            pages = TiffInfo.CountPages(tiff);
+        }
+        else
+        {
+            pages = await new GhostscriptConverter().ToFaxTiffAsync(source, tiff, resolution, mode, ct);
+        }
+        WriteLog($"Dokument umgewandelt: {pages} Seite(n), {resolution.DisplayName()}, Modus {mode}");
+        return pages;
     }
 
     public static IReadOnlyList<JournalEntry> ReadJournal(int max = 200)

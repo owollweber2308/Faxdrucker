@@ -95,6 +95,9 @@ public sealed unsafe class FaxSession : IDisposable
 
     public void Terminate() => FaxShim.fs_terminate(H);
 
+    /// <summary>T.30-Code: Gegenstelle kann die Auflösung des Dokuments nicht empfangen.</summary>
+    public static int CodeNoResolutionSupport => FaxShim.fs_code_no_resolution_support();
+
     public static string ResultText(int code) =>
         code < 0 ? "Übertragung nicht abgeschlossen" : Marshal.PtrToStringAnsi(FaxShim.fs_result_text(code)) ?? code.ToString();
 

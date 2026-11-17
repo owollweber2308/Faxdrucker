@@ -1,4 +1,5 @@
 using FaxDrucker.Core;
+using FaxDrucker.Core.Convert;
 using FaxDrucker.Core.Settings;
 using FaxDrucker.Core.Sip;
 
@@ -18,7 +19,8 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _station = Box();
     private readonly TextBox _header = Box();
     private readonly CheckBox _t38 = new() { Text = "T.38 verwenden (empfohlen)", AutoSize = true };
-    private readonly CheckBox _fine = new() { Text = "Feine Auflösung (204×196 dpi)", AutoSize = true };
+    private readonly ComboBox _resolution = QualityControls.ResolutionBox();
+    private readonly ComboBox _imageMode = QualityControls.ImageModeBox();
     private readonly CheckBox _ecm = new() { Text = "Fehlerkorrektur (ECM)", AutoSize = true };
     private readonly NumericUpDown _retries = new() { Minimum = 0, Maximum = 10, Width = 60 };
     private readonly NumericUpDown _retryDelay = new() { Minimum = 10, Maximum = 3600, Increment = 30, Width = 80 };
@@ -88,7 +90,15 @@ internal sealed class SettingsForm : Form
 
         Section("Übertragung");
         Full(_t38);
-        Full(_fine);
+        Row("Auflösung (Standard):", _resolution);
+        Row("Bildmodus (Standard):", _imageMode);
+        var qHint = new Label
+        {
+            Text = "Superfein und Foto verbessern Schrift und Bilder, die Übertragung dauert aber deutlich länger. " +
+                   "Kann der Empfänger kein Superfein, wird automatisch in Fein gesendet.",
+            AutoSize = true, MaximumSize = new Size(340, 0), ForeColor = Color.DimGray,
+        };
+        Full(qHint);
         Full(_ecm);
         var retry = new FlowLayoutPanel { AutoSize = true, Margin = Padding.Empty };
         retry.Controls.Add(_retries);
@@ -150,7 +160,8 @@ internal sealed class SettingsForm : Form
         _station.Text = s.StationId;
         _header.Text = s.HeaderText;
         _t38.Checked = s.Sip.T38 == T38Policy.Auto;
-        _fine.Checked = s.FineResolution;
+        _resolution.SelectedIndex = (int)s.Resolution;
+        _imageMode.SelectedIndex = (int)s.ImageMode;
         _ecm.Checked = s.Ecm;
         _retries.Value = Math.Clamp(s.RetryCount, 0, 10);
         _retryDelay.Value = Math.Clamp(s.RetryDelaySeconds, 10, 3600);
@@ -171,7 +182,8 @@ internal sealed class SettingsForm : Form
         s.StationId = _station.Text.Trim();
         s.HeaderText = _header.Text.Trim();
         s.Sip.T38 = _t38.Checked ? T38Policy.Auto : T38Policy.Off;
-        s.FineResolution = _fine.Checked;
+        s.Resolution = (FaxResolution)_resolution.SelectedIndex;
+        s.ImageMode = (ImageMode)_imageMode.SelectedIndex;
         s.Ecm = _ecm.Checked;
         s.RetryCount = (int)_retries.Value;
         s.RetryDelaySeconds = (int)_retryDelay.Value;
@@ -226,5 +238,25 @@ internal sealed class JournalForm : Form
             if (_list.SelectedItems.Count == 1 && _list.SelectedItems[0].Tag is string p && File.Exists(p))
                 TrayApp.OpenFile(p);
         };
+    }
+}
+
+/// <summary>Auswahllisten für Auflösung und Bildmodus (Reihenfolge = Enum-Werte).</summary>
+internal static class QualityControls
+{
+    public static ComboBox ResolutionBox()
+    {
+        var c = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 240 };
+        foreach (FaxResolution r in Enum.GetValues<FaxResolution>())
+            c.Items.Add(r.DisplayName());
+        return c;
+    }
+
+    public static ComboBox ImageModeBox()
+    {
+        var c = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 240 };
+        c.Items.Add("Text (scharfe Schrift)");
+        c.Items.Add("Foto (Graustufen gerastert)");
+        return c;
     }
 }

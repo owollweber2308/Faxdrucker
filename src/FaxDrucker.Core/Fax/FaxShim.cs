@@ -83,4 +83,7 @@ internal static unsafe class FaxShim
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr fs_spandsp_version();
+
+    [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int fs_code_no_resolution_support();
 }

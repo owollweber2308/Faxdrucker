@@ -1,3 +1,4 @@
+using FaxDrucker.Core.Convert;
 using FaxDrucker.Core.Settings;
 using FaxDrucker.Core.Sip;
 
@@ -10,11 +11,15 @@ internal sealed class SendDialog : Form
     private readonly TextBox _number = new() { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 14f) };
     private readonly CheckBox _save = new() { Text = "Im Adressbuch speichern", AutoSize = true };
     private readonly Label _hint = new() { AutoSize = true, ForeColor = Color.Firebrick };
+    private readonly ComboBox _resolution = QualityControls.ResolutionBox();
+    private readonly ComboBox _imageMode = QualityControls.ImageModeBox();
     private readonly AppSettings _settings;
 
     public string Number => SipFaxCall.NormalizeNumber(_number.Text);
     public string? RecipientName => string.IsNullOrWhiteSpace(_recipient.Text) ? null : _recipient.Text.Trim();
     public bool SaveToAddressBook => _save.Checked;
+    public FaxResolution Resolution => (FaxResolution)_resolution.SelectedIndex;
+    public ImageMode ImageMode => (ImageMode)_imageMode.SelectedIndex;
 
     public SendDialog(AppSettings settings, string title, int pageCount)
     {
@@ -27,11 +32,11 @@ internal sealed class SendDialog : Form
         TopMost = true; // erscheint vor dem druckenden Programm
         AutoScaleMode = AutoScaleMode.Dpi;
         Font = new Font("Segoe UI", 10f);
-        ClientSize = new Size(480, 260);
+        ClientSize = new Size(480, 330);
 
         var layout = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 2, RowCount = 6,
+            Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 2, RowCount = 8,
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -50,15 +55,21 @@ internal sealed class SendDialog : Form
         layout.Controls.Add(_recipient, 1, 1);
         layout.Controls.Add(new Label { Text = "Faxnummer:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 2);
         layout.Controls.Add(_number, 1, 2);
-        layout.Controls.Add(_save, 1, 3);
-        layout.Controls.Add(_hint, 1, 4);
+        layout.Controls.Add(new Label { Text = "Auflösung:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 3);
+        layout.Controls.Add(_resolution, 1, 3);
+        layout.Controls.Add(new Label { Text = "Bildmodus:", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 4);
+        layout.Controls.Add(_imageMode, 1, 4);
+        layout.Controls.Add(_save, 1, 5);
+        layout.Controls.Add(_hint, 1, 6);
+        _resolution.SelectedIndex = (int)settings.Resolution;
+        _imageMode.SelectedIndex = (int)settings.ImageMode;
 
         var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, Dock = DockStyle.Fill, AutoSize = true };
         var send = new Button { Text = "Senden", DialogResult = DialogResult.None, AutoSize = true, Padding = new Padding(12, 2, 12, 2) };
         var cancel = new Button { Text = "Abbrechen", DialogResult = DialogResult.Cancel, AutoSize = true };
         buttons.Controls.Add(send);
         buttons.Controls.Add(cancel);
-        layout.Controls.Add(buttons, 0, 5);
+        layout.Controls.Add(buttons, 0, 7);
         layout.SetColumnSpan(buttons, 2);
         Controls.Add(layout);
         AcceptButton = send;

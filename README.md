@@ -14,6 +14,24 @@ Virtueller Windows-Drucker, der Ausdrucke als Fax über einen SIP-Account versen
 
 Bei „besetzt“ oder Abbruch wählt FaxDrucker automatisch erneut (einstellbar).
 
+## Qualität
+
+In den Einstellungen (Standard) und im Sendefenster (nur für dieses Fax) wählbar:
+
+| Auflösung | dpi | Wofür | Dauer |
+|---|---|---|---|
+| Normal | 204×98 | einfache Texte | am schnellsten |
+| **Fein** (Standard) | 204×196 | Briefe, Rechnungen | normal |
+| Superfein | 204×391 | kleine Schrift, Pläne, Unterschriften | etwa doppelt so lang |
+
+| Bildmodus | Wofür |
+|---|---|
+| **Text** (Standard) | scharfe Kanten für Schrift und Tabellen |
+| Foto | Graustufen werden fein gerastert (Fehlerdiffusion), gut für Fotos, Logos, Scans |
+
+Kann der Empfänger kein Superfein, sendet FaxDrucker automatisch noch einmal in Fein.
+Fotoseiten enthalten viel mehr Bildpunkte und brauchen pro Seite oft mehrere Minuten.
+
 ## Installation
 
 Voraussetzungen: Windows 10/11 (64 Bit) und [Ghostscript](https://ghostscript.com/releases/gsdnld.html)
@@ -40,7 +58,8 @@ Entfernen: `Deinstallieren.cmd` im Programmordner `C:\Program Files\FaxDrucker`.
 
 ```
 faxsend einrichten                       SIP-Zugang eintragen
-faxsend senden 0221123456 Brief.pdf      Datei faxen (--g711 erzwingt G.711, --trace zeigt SIP)
+faxsend senden 0221123456 Brief.pdf      Datei faxen (--g711 erzwingt G.711, --trace zeigt SIP,
+                                         --normal/--fein/--superfein, --text/--foto)
 faxsend selbsttest                       Ghostscript und Faxmodem lokal prüfen
 faxsend protokoll                        letzte Sendungen
 ```

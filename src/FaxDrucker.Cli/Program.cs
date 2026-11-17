@@ -8,6 +8,7 @@ using FaxDrucker.Core.Sip;
 // faxsend – Kommandozeile zum Testen und für Skripte.
 //   faxsend einrichten
 //   faxsend senden <Nummer> <Datei.pdf|.ps|.tif> [--name Empfänger] [--g711] [--trace]
+//                  [--normal|--fein|--superfein] [--text|--foto]
 //   faxsend selbsttest
 //   faxsend protokoll
 
@@ -55,6 +56,7 @@ static void PrintHelp()
           faxsend einrichten                    SIP-Zugang (z. B. Placetel) eintragen
           faxsend senden <Nummer> <Datei>       PDF/PostScript/TIFF faxen
                  [--name Empfänger] [--g711] [--trace]
+                 [--normal|--fein|--superfein] [--text|--foto]
           faxsend selbsttest                    Ghostscript + Faxmodem lokal prüfen
           faxsend protokoll                     letzte Sendungen anzeigen
 
@@ -101,11 +103,18 @@ static async Task<int> Send(List<string> a)
 {
     string? name = null;
     bool g711 = false;
+    FaxResolution? res = null;
+    ImageMode? mode = null;
     var positional = new List<string>();
     for (int i = 0; i < a.Count; i++)
     {
         if (a[i] == "--name" && i + 1 < a.Count) name = a[++i];
         else if (a[i] == "--g711") g711 = true;
+        else if (a[i] == "--normal") res = FaxResolution.Normal;
+        else if (a[i] == "--fein") res = FaxResolution.Fein;
+        else if (a[i] == "--superfein") res = FaxResolution.Superfein;
+        else if (a[i] == "--foto") mode = ImageMode.Foto;
+        else if (a[i] == "--text") mode = ImageMode.Text;
         else if (a[i] == "--trace") Environment.SetEnvironmentVariable("FAXDRUCKER_SIP_TRACE", "1");
         else positional.Add(a[i]);
     }
@@ -132,6 +141,8 @@ static async Task<int> Send(List<string> a)
         SourceFile = Path.GetFullPath(positional[1]),
         RecipientName = name,
         DocumentName = Path.GetFileName(positional[1]),
+        Resolution = res,
+        ImageMode = mode,
     }, cts.Token);
     Console.WriteLine(entry.Success ? $"OK: {entry.Message}" : $"FEHLER: {entry.Message}");
     if (entry.ReportPath != null) Console.WriteLine("Sendebericht: " + entry.ReportPath);

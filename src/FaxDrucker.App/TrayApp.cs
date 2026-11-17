@@ -87,6 +87,8 @@ internal sealed class TrayApp : ApplicationContext
             RecipientName = dlg.RecipientName,
             DocumentName = title,
             DeleteSourceAfterwards = deleteAfterwards,
+            Resolution = dlg.Resolution,
+            ImageMode = dlg.ImageMode,
         };
         StartSending(request);
     }

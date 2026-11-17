@@ -78,6 +78,8 @@ FS_API void FS_CALL fs_ulaw_encode(const int16_t *amp, uint8_t *out, int len);
 FS_API void FS_CALL fs_ulaw_decode(const uint8_t *in, int16_t *amp, int len);
 
 FS_API const char * FS_CALL fs_spandsp_version(void);
+/* T.30-Code "Gegenstelle unterstützt die Auflösung nicht" (Wert hängt von der spandsp-Version ab). */
+FS_API int FS_CALL fs_code_no_resolution_support(void);
 
 #ifdef __cplusplus
 }

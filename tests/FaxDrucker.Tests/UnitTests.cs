@@ -111,11 +111,11 @@ public class TiffTests
 
 internal static class TestDocs
 {
-    public static async Task<string> CreateTiffAsync()
+    public static async Task<string> CreateTiffAsync(FaxResolution res = FaxResolution.Fein, ImageMode mode = ImageMode.Text)
     {
         var tif = Path.Combine(Path.GetTempPath(), $"faxtest-{Guid.NewGuid():N}.tif");
         var ps = Path.Combine(AppContext.BaseDirectory, "testdata", "sample.ps");
-        await new GhostscriptConverter().ToFaxTiffAsync(ps, tif, fine: true);
+        await new GhostscriptConverter().ToFaxTiffAsync(ps, tif, res, mode);
         return tif;
     }
 }

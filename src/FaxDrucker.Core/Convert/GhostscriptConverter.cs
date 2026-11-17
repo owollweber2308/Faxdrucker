@@ -52,25 +52,37 @@ public sealed class GhostscriptConverter
     }
 
     /// <summary>
-    /// Erzeugt ein mehrseitiges TIFF. fine = 204x196 dpi (Fein), sonst 204x98 dpi (Normal).
-    /// Gibt die Seitenzahl zurück.
+    /// Erzeugt ein mehrseitiges Fax-TIFF (1728 Pixel breit = 215 mm bei 204 dpi) und gibt die Seitenzahl zurück.
     /// </summary>
-    public async Task<int> ToFaxTiffAsync(string input, string outputTiff, bool fine = true, CancellationToken ct = default)
+    public async Task<int> ToFaxTiffAsync(string input, string outputTiff,
+        FaxResolution resolution = FaxResolution.Fein, ImageMode mode = ImageMode.Text, CancellationToken ct = default)
     {
-        int yRes = fine ? 196 : 98;
-        // A4 auf Faxbreite 1728 Pixel (215 mm) bei 204 dpi; Höhe A4 (297 mm).
-        int height = (int)Math.Round(11.69 * yRes);
-        var args = new List<string>
+        int yRes = resolution.VerticalDpi();
+        int height = (int)Math.Round(11.69 * yRes); // A4-Höhe
+        var args = new List<string> { "-q", "-dNOPAUSE", "-dBATCH", "-dSAFER" };
+
+        if (mode == ImageMode.Text)
         {
-            "-q", "-dNOPAUSE", "-dBATCH", "-dSAFER",
-            "-sDEVICE=tiffg3",
-            $"-r204x{yRes}",
-            $"-g1728x{height}",
-            "-dFIXEDMEDIA", "-dPDFFitPage", "-dFitPage",
-            "-dTextAlphaBits=1", "-dGraphicsAlphaBits=1",
-            "-sOutputFile=" + outputTiff,
-            input,
-        };
+            // Direkt in Schwarz/Weiß rendern: schärfste Schrift, kleinste Datei.
+            args.AddRange(new[]
+            {
+                "-sDEVICE=tiffg3", $"-r204x{yRes}", $"-g1728x{height}",
+                "-dTextAlphaBits=1", "-dGraphicsAlphaBits=1",
+            });
+        }
+        else
+        {
+            // Mit dreifacher Auflösung in Graustufen rendern und per Fehlerdiffusion
+            // auf Schwarz/Weiß verkleinern: Fotos, Logos und Graustufen bleiben erkennbar.
+            const int f = 3;
+            args.AddRange(new[]
+            {
+                "-sDEVICE=tiffscaled", "-sCompression=g4", $"-dDownScaleFactor={f}",
+                $"-r{204 * f}x{yRes * f}", $"-g{1728 * f}x{height * f}",
+                "-dTextAlphaBits=4", "-dGraphicsAlphaBits=4",
+            });
+        }
+        args.AddRange(new[] { "-dFIXEDMEDIA", "-dPDFFitPage", "-dFitPage", "-sOutputFile=" + outputTiff, input });
 
         var psi = new ProcessStartInfo(Executable)
         {
@@ -91,6 +103,43 @@ public sealed class GhostscriptConverter
             throw new InvalidOperationException($"Ghostscript-Fehler ({proc.ExitCode}): {stderr.Trim()}");
         return TiffInfo.CountPages(outputTiff);
     }
+}
+
+/// <summary>Faxauflösung (horizontal immer 204 dpi).</summary>
+public enum FaxResolution
+{
+    /// <summary>204×98 dpi – schnell, für einfache Texte.</summary>
+    Normal,
+    /// <summary>204×196 dpi – Standard für Briefe.</summary>
+    Fein,
+    /// <summary>204×391 dpi – kleine Schrift und Details; dauert etwa doppelt so lange wie Fein.</summary>
+    Superfein,
+}
+
+/// <summary>Wie das Dokument in Schwarz/Weiß umgesetzt wird.</summary>
+public enum ImageMode
+{
+    /// <summary>Scharfe Kanten, ideal für Text und Tabellen.</summary>
+    Text,
+    /// <summary>Fehlerdiffusion (Rasterung) für Fotos, Logos und Graustufen.</summary>
+    Foto,
+}
+
+public static class FaxResolutionExtensions
+{
+    public static int VerticalDpi(this FaxResolution r) => r switch
+    {
+        FaxResolution.Normal => 98,
+        FaxResolution.Superfein => 391,
+        _ => 196,
+    };
+
+    public static string DisplayName(this FaxResolution r) => r switch
+    {
+        FaxResolution.Normal => "Normal (204×98 dpi)",
+        FaxResolution.Superfein => "Superfein (204×391 dpi)",
+        _ => "Fein (204×196 dpi)",
+    };
 }
 
 /// <summary>Zählt die Seiten (IFDs) einer TIFF-Datei ohne externe Bibliothek.</summary>

@@ -7,4 +7,7 @@ newpath 72 100 moveto 520 100 lineto 520 650 lineto 72 650 lineto closepath stro
 showpage
 /Helvetica findfont 28 scalefont setfont
 72 720 moveto (FaxDrucker Testseite 2) show
+% Graustufenverlauf (prueft den Foto-Modus)
+0 1 49 { /i exch def i 49 div setgray 72 i 9 mul add 300 9 400 rectfill } for
+0 0 0 setrgbcolor 72 300 moveto (Graustufen) show
 showpage
