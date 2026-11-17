@@ -42,6 +42,9 @@ internal sealed class TrayApp : ApplicationContext
 
         if (string.IsNullOrWhiteSpace(_settings.Sip.Username))
             _ui.Post(_ => ShowSettings(firstRun: true), null);
+
+        if (Core.Convert.GhostscriptConverter.Find() == null)
+            _ui.Post(_ => WarnGhostscriptMissing(), null);
     }
 
     private void ChooseFile()
@@ -137,6 +140,17 @@ internal sealed class TrayApp : ApplicationContext
             return true;
         }
         return false;
+    }
+
+    private static void WarnGhostscriptMissing()
+    {
+        const string url = "https://ghostscript.com/releases/gsdnld.html";
+        if (MessageBox.Show(
+                "Ghostscript ist nicht installiert. FaxDrucker braucht es, um Ausdrucke in Faxseiten umzuwandeln.\n\n" +
+                "Bitte die 64-Bit-Version von Ghostscript installieren (alternativ in der Eingabeaufforderung: " +
+                "winget install ArtifexSoftware.GhostScript).\n\nDownloadseite jetzt öffnen?",
+                "FaxDrucker", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            OpenFile(url);
     }
 
     private void Balloon(string text, ToolTipIcon icon)

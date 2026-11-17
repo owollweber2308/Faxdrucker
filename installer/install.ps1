@@ -12,8 +12,6 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $src = $PSScriptRoot
-$portName = '\\.\pipe\FaxDrucker'
-$driver = 'Microsoft PS Class Driver'
 
 Write-Host "FaxDrucker wird installiert nach $Target" -ForegroundColor Cyan
 
@@ -29,31 +27,8 @@ New-Item -ItemType Directory -Force $Target | Out-Null
 Get-ChildItem $src | Where-Object { $_.Name -notin @('install.ps1', 'Installieren.cmd') } |
     Copy-Item -Destination $Target -Recurse -Force
 
-# Druckertreiber (in Windows 10/11 enthalten)
-if (-not (Get-PrinterDriver -Name $driver -ErrorAction SilentlyContinue)) {
-    Write-Host "Installiere Druckertreiber '$driver'…"
-    Add-PrinterDriver -Name $driver
-}
-
-# Lokaler Anschluss, der in die Named Pipe schreibt
-if (-not (Get-PrinterPort -Name $portName -ErrorAction SilentlyContinue)) {
-    Write-Host "Lege Druckeranschluss $portName an…"
-    try {
-        Add-PrinterPort -Name $portName
-    } catch {
-        New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Ports' -Name $portName `
-            -Value '' -PropertyType String -Force | Out-Null
-        Restart-Service Spooler -Force
-        Start-Sleep -Seconds 2
-    }
-}
-
-# Drucker anlegen (vorhandenen ersetzen)
-if (Get-Printer -Name $PrinterName -ErrorAction SilentlyContinue) {
-    Remove-Printer -Name $PrinterName
-}
-Add-Printer -Name $PrinterName -DriverName $driver -PortName $portName -Comment 'Fax über SIP (Placetel)'
-try { Set-PrintConfiguration -PrinterName $PrinterName -PaperSize A4 -Color $false } catch { }
+# Drucker, Treiber und Anschluss
+& "$Target\printer-setup.ps1" -PrinterName $PrinterName
 
 # Autostart für alle Benutzer
 New-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name 'FaxDrucker' `
