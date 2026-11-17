@@ -1,0 +1,9 @@
+bin/
+obj/
+*.user
+.vs/
+native/faxshim/*.so
+native/faxshim/*.dll
+native/faxshim/*.o
+dist/
+TestResults/
