@@ -50,7 +50,8 @@
     <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="0F2B9E43-8E8D-4C77-B0B5-1B9E3F6D2C21">
       <Shortcut Id="FaxDruckerShortcut" Name="FaxDrucker" Description="Fax über SIP senden"
                 Target="[INSTALLFOLDER]FaxDrucker.exe" WorkingDirectory="INSTALLFOLDER" />
-      <RegistryValue Root="HKLM" Key="SOFTWARE\FaxDrucker" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      <!-- ICE38/43: KeyPath für Verknüpfungen muss unter HKCU liegen -->
+      <RegistryValue Root="HKCU" Key="SOFTWARE\FaxDrucker" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
     <!-- Laufendes Programm vor dem Ersetzen der Dateien beenden -->
