@@ -79,6 +79,12 @@ jobs:
         shell: pwsh
         run: |
           $msi = (Get-ChildItem dist/msi/*.msi | Select-Object -First 1).FullName
+          # Ungültiger Lizenzschlüssel muss die Installation abbrechen und alles zurückrollen
+          $p = Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /qn FAXDRUCKER_NOSTART=1 LICENSEKEY=FD1-UNGUELTIG /l*v `"$PWD\badkey.log`"" -Wait -PassThru
+          if ($p.ExitCode -eq 0) { throw 'Installation mit ungültigem Lizenzschlüssel hätte fehlschlagen müssen' }
+          if (Get-Printer -Name FaxDrucker -ErrorAction SilentlyContinue) { throw 'Drucker nach Rollback noch vorhanden' }
+          if (Test-Path "$env:ProgramFiles\FaxDrucker\FaxDrucker.exe") { throw 'Dateien nach Rollback noch vorhanden' }
+          Write-Host "Ungültiger Schlüssel korrekt abgelehnt (Exitcode $($p.ExitCode))"
           $p = Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /qn FAXDRUCKER_NOSTART=1 /l*v `"$PWD\install.log`"" -Wait -PassThru
           if ($p.ExitCode -ne 0) { Get-Content install.log -Tail 80; throw "Installation fehlgeschlagen: $($p.ExitCode)" }
           Select-String -Path install.log -Pattern 'WixQuietExec' | Select-Object -Last 15 | ForEach-Object { $_.Line }
@@ -103,3 +109,12 @@ jobs:
         with:
           name: FaxDrucker-win-x64
           path: dist/FaxDrucker
+
+      - name: Lizenzgenerator (nur für den Herausgeber)
+        shell: pwsh
+        run: dotnet publish tools/FaxDrucker.Lizenzgenerator -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/Lizenzgenerator
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lizenzgenerator-NICHT-WEITERGEBEN
+          path: dist/Lizenzgenerator

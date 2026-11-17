@@ -2,6 +2,7 @@
 <#
   FaxDrucker installieren:
    - Programm nach C:\Program Files\FaxDrucker kopieren
+   - Lizenzschlüssel abfragen
    - Drucker "FaxDrucker" mit dem in Windows enthaltenen PostScript-Treiber anlegen
    - Druckeranschluss \\.\pipe\FaxDrucker (Übergabe an das Programm im Infobereich)
    - Autostart für alle Benutzer
@@ -26,6 +27,23 @@ Start-Sleep -Milliseconds 500
 New-Item -ItemType Directory -Force $Target | Out-Null
 Get-ChildItem $src | Where-Object { $_.Name -notin @('install.ps1', 'Installieren.cmd') } |
     Copy-Item -Destination $Target -Recurse -Force
+
+# Lizenz: wird für alle Benutzer unter %ProgramData%\FaxDrucker\lizenz.txt gespeichert
+$faxsend = Join-Path $Target 'faxsend.exe'
+& $faxsend lizenz | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host ("Vorhandene Lizenz: " + ((& $faxsend lizenz) -replace '^Lizenziert für ', ''))
+} else {
+    while ($true) {
+        $key = Read-Host 'Bitte den Lizenzschlüssel eingeben (FD1-…)'
+        if ([string]::IsNullOrWhiteSpace($key)) {
+            Write-Warning 'Ohne Lizenzschlüssel fragt FaxDrucker beim ersten Start danach.'
+            break
+        }
+        & $faxsend lizenz $key
+        if ($LASTEXITCODE -eq 0) { break }
+    }
+}
 
 # Drucker, Treiber und Anschluss
 & "$Target\printer-setup.ps1" -PrinterName $PrinterName

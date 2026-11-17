@@ -23,6 +23,7 @@ internal sealed class TrayApp : ApplicationContext
         menu.Items.Add("Datei faxen…", null, (_, _) => ChooseFile());
         menu.Items.Add("Sendeprotokoll", null, (_, _) => new JournalForm().Show());
         menu.Items.Add("Einstellungen…", null, (_, _) => ShowSettings());
+        menu.Items.Add("Lizenz…", null, (_, _) => { using var f = new LicenseForm(); f.ShowDialog(); });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Beenden", null, (_, _) => Quit());
 
@@ -60,6 +61,11 @@ internal sealed class TrayApp : ApplicationContext
 
     public void OpenSendDialogForFile(string file, string title, bool deleteAfterwards, int pageCount = 0)
     {
+        if (!LicenseForm.EnsureLicensed())
+        {
+            if (deleteAfterwards) TryDelete(file);
+            return;
+        }
         _settings = AppSettings.Load();
         if (string.IsNullOrWhiteSpace(_settings.Sip.Username) && !ShowSettings(firstRun: true))
         {

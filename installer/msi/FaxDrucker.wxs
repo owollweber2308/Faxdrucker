@@ -21,6 +21,8 @@
 
     <Property Id="ARPCOMMENTS" Value="Virtueller Faxdrucker mit Versand über SIP" />
     <Property Id="ARPNOMODIFY" Value="1" />
+    <!-- Lizenzschlüssel für die stille Verteilung: msiexec /i FaxDrucker.msi /qn LICENSEKEY=FD1-… -->
+    <Property Id="LICENSEKEY" Secure="yes" Hidden="yes" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="FaxDrucker" />
@@ -72,6 +74,13 @@
     <CustomAction Id="CA_PrinterRemove" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
                   Execute="deferred" Return="ignore" Impersonate="no" />
 
+    <!-- Lizenzschlüssel speichern (%ProgramData%\FaxDrucker\lizenz.txt). Ungültiger Schlüssel bricht die Installation ab.
+         Ohne LICENSEKEY fragt FaxDrucker beim ersten Start selbst danach. -->
+    <SetProperty Id="CA_License" Sequence="execute" Before="CA_License" Condition="LICENSEKEY"
+                 Value="&quot;[INSTALLFOLDER]faxsend.exe&quot; lizenz &quot;[LICENSEKEY]&quot;" />
+    <CustomAction Id="CA_License" BinaryRef="Wix4UtilCA_X64" DllEntry="WixQuietExec"
+                  Execute="deferred" Return="check" Impersonate="no" HideTarget="yes" />
+
     <!-- Nach der Installation im Benutzerkontext (ohne Adminrechte) starten -->
     <CustomAction Id="CA_LaunchApp" Directory="INSTALLFOLDER"
                   ExeCommand="&quot;[WindowsFolder]explorer.exe&quot; &quot;[INSTALLFOLDER]FaxDrucker.exe&quot;"
@@ -81,6 +90,7 @@
       <Custom Action="CA_StopApp" Before="RemoveFiles" />
       <Custom Action="CA_PrinterRemove" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
       <Custom Action="CA_PrinterInstall" After="InstallFiles" Condition="NOT REMOVE" />
+      <Custom Action="CA_License" After="CA_PrinterInstall" Condition="LICENSEKEY AND NOT REMOVE" />
       <Custom Action="CA_LaunchApp" After="InstallFinalize" Condition="NOT REMOVE AND UILevel &gt;= 3 AND NOT FAXDRUCKER_NOSTART" />
     </InstallExecuteSequence>
   </Package>
