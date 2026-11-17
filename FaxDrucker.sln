@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5BA657EC-1226-4D9B-BB0A-875C4356FF96}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaxDrucker.Core", "src\FaxDrucker.Core\FaxDrucker.Core.csproj", "{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaxDrucker.Cli", "src\FaxDrucker.Cli\FaxDrucker.Cli.csproj", "{59C12177-BFCD-4A59-BB7A-B78E5753BA74}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0C780C1F-0AD9-404C-AE48-F52ECB3E943D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaxDrucker.Tests", "tests\FaxDrucker.Tests\FaxDrucker.Tests.csproj", "{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59C12177-BFCD-4A59-BB7A-B78E5753BA74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59C12177-BFCD-4A59-BB7A-B78E5753BA74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59C12177-BFCD-4A59-BB7A-B78E5753BA74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59C12177-BFCD-4A59-BB7A-B78E5753BA74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318} = {5BA657EC-1226-4D9B-BB0A-875C4356FF96}
+		{59C12177-BFCD-4A59-BB7A-B78E5753BA74} = {5BA657EC-1226-4D9B-BB0A-875C4356FF96}
+		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD} = {0C780C1F-0AD9-404C-AE48-F52ECB3E943D}
+	EndGlobalSection
+EndGlobal
