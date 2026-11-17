@@ -1,6 +1,7 @@
 ﻿using FaxDrucker.Core;
 using FaxDrucker.Core.Convert;
 using FaxDrucker.Core.Fax;
+using FaxDrucker.Core.Licensing;
 using FaxDrucker.Core.Media;
 using FaxDrucker.Core.Settings;
 using FaxDrucker.Core.Sip;
@@ -10,6 +11,7 @@ using FaxDrucker.Core.Sip;
 //   faxsend senden <Nummer> <Datei.pdf|.ps|.tif> [--name Empfänger] [--g711] [--trace]
 //                  [--normal|--fein|--superfein] [--text|--foto]
 //   faxsend selbsttest
+//   faxsend lizenz [<Schlüssel>]
 //   faxsend protokoll
 
 var argList = args.ToList();
@@ -28,7 +30,15 @@ try
             return Setup();
         case "senden":
         case "send":
+            if (LicenseStore.Current(out var licError) == null)
+            {
+                Console.Error.WriteLine(licError + " Bitte mit „faxsend lizenz <Schlüssel>“ eingeben.");
+                return 3;
+            }
             return await Send(argList.Skip(1).ToList());
+        case "lizenz":
+        case "license":
+            return LicenseCommand(string.Join("", argList.Skip(1)));
         case "selbsttest":
         case "selftest":
             return await SelfTest();
@@ -59,9 +69,28 @@ static void PrintHelp()
                  [--normal|--fein|--superfein] [--text|--foto]
           faxsend selbsttest                    Ghostscript + Faxmodem lokal prüfen
           faxsend protokoll                     letzte Sendungen anzeigen
+          faxsend lizenz [<Schlüssel>]          Lizenz anzeigen oder Schlüssel eingeben
 
         Einstellungen: %APPDATA%\FaxDrucker\settings.json
         """);
+}
+
+static int LicenseCommand(string key)
+{
+    if (string.IsNullOrWhiteSpace(key))
+    {
+        var current = LicenseStore.Current(out var err);
+        Console.WriteLine(current != null ? "Lizenziert für " + current.Describe() : err);
+        return current != null ? 0 : 3;
+    }
+    var lic = LicenseStore.Install(key, out var error, out var savedTo);
+    if (lic == null)
+    {
+        Console.Error.WriteLine(error);
+        return 3;
+    }
+    Console.WriteLine($"Lizenz gespeichert ({savedTo}): {lic.Describe()}");
+    return 0;
 }
 
 static int Setup()

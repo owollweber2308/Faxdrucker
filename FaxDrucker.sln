@@ -13,6 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0C780C1F
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaxDrucker.Tests", "tests\FaxDrucker.Tests\FaxDrucker.Tests.csproj", "{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{C461A1C0-338B-4284-BA77-17152BFC74D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaxDrucker.Lizenzgenerator", "tools\FaxDrucker.Lizenzgenerator\FaxDrucker.Lizenzgenerator.csproj", "{264F7D91-3848-4FA8-B363-71522D5E2533}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +38,15 @@ Global
 		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{264F7D91-3848-4FA8-B363-71522D5E2533}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{264F7D91-3848-4FA8-B363-71522D5E2533}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{264F7D91-3848-4FA8-B363-71522D5E2533}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{264F7D91-3848-4FA8-B363-71522D5E2533}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9DD8D3D3-F8EC-464C-8E1C-9D70CC21F318} = {5BA657EC-1226-4D9B-BB0A-875C4356FF96}
 		{59C12177-BFCD-4A59-BB7A-B78E5753BA74} = {5BA657EC-1226-4D9B-BB0A-875C4356FF96}
 		{D93F3D4B-9040-451A-9120-C0FB24ADAEBD} = {0C780C1F-0AD9-404C-AE48-F52ECB3E943D}
+		{264F7D91-3848-4FA8-B363-71522D5E2533} = {C461A1C0-338B-4284-BA77-17152BFC74D6}
 	EndGlobalSection
 EndGlobal

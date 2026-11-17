@@ -70,3 +70,12 @@ jobs:
         with:
           name: FaxDrucker-win-x64
           path: dist/FaxDrucker
+
+      - name: Lizenzgenerator (nur für den Herausgeber)
+        shell: pwsh
+        run: dotnet publish tools/FaxDrucker.Lizenzgenerator -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist/Lizenzgenerator
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lizenzgenerator-NICHT-WEITERGEBEN
+          path: dist/Lizenzgenerator
