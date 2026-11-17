@@ -10,10 +10,17 @@ internal static class Program
     /// <summary>
     /// FaxDrucker.exe                 Startet das Programm im Infobereich (nimmt Druckaufträge an).
     /// FaxDrucker.exe Datei.pdf       Faxt eine Datei (übergibt sie an das laufende Programm).
+    /// FaxDrucker.exe --lizenz        Nur den Lizenzdialog zeigen (für das Setup).
     /// </summary>
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Any(a => a.Equals("--lizenz", StringComparison.OrdinalIgnoreCase)))
+        {
+            ApplicationConfiguration.Initialize();
+            return LicenseForm.EnsureLicensed() ? 0 : 3;
+        }
+
         var file = args.FirstOrDefault(a => !a.StartsWith('-') && File.Exists(a));
 
         using var mutex = new Mutex(true, MutexName, out bool first);
@@ -25,6 +32,7 @@ internal static class Program
         }
 
         ApplicationConfiguration.Initialize();
+        if (!LicenseForm.EnsureLicensed()) return 3;
         using var tray = new TrayApp(PipeName);
         if (file != null)
             tray.OpenSendDialogForFile(file, Path.GetFileName(file), deleteAfterwards: false);

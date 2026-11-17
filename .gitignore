@@ -7,3 +7,8 @@ native/faxshim/*.dll
 native/faxshim/*.o
 dist/
 TestResults/
+
+# Lizenzgenerator: geheimer Schlüssel und Kundenliste nie einchecken
+lizenz-privat.pem
+lizenzen.csv
+*.pem

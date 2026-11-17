@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Nur für den Herausgeber! Nicht an Kunden weitergeben. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Lizenzgenerator</AssemblyName>
+    <RootNamespace>FaxDrucker.Lizenzgenerator</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FaxDrucker.Core\FaxDrucker.Core.csproj" />
+  </ItemGroup>
+
+</Project>
